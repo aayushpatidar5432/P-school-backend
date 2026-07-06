@@ -114,7 +114,7 @@ public class DataSender implements CommandLineRunner {
 				User superAdmin = new User();
 
 				superAdmin.setFullName("Super Admin");
-				superAdmin.setEmail("superadmin@pschool.com");
+				superAdmin.setEmail("akpatidarpatidar0@gmail.com");
 				superAdmin.setPassword(securityConfig.passwordEncoder().encode("admin@123"));
 				System.err.println(securityConfig.passwordEncoder().encode("admin@123"));
 //				superAdmin.setPassword("Admin@123");

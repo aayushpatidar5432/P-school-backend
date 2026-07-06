@@ -19,7 +19,7 @@ public class JwtUtil {
 
 	// 1 Minute
 	private static final long EXPIRATION = 60 * 1000;
-	
+
 	private static final long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 60 * 24 * 7; // 7 Days
 
 	private Key getSignInKey() {
@@ -34,17 +34,13 @@ public class JwtUtil {
 				.setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
 				.signWith(getSignInKey(), SignatureAlgorithm.HS256).compact();
 	}
-	
-	
-	// Generate Refresh Token 
+
+	// Generate Refresh Token
 	public String generateRefreshToken(String email) {
 
-	    return Jwts.builder()
-	    		   .setSubject(email)
-	            .setIssuedAt(new Date())
-	            .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
-	            .signWith(getSignInKey(), SignatureAlgorithm.HS256)
-	            .compact();
+		return Jwts.builder().setSubject(email).setIssuedAt(new Date())
+				.setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
+				.signWith(getSignInKey(), SignatureAlgorithm.HS256).compact();
 	}
 
 	// Extract Username (Email)
@@ -63,5 +59,19 @@ public class JwtUtil {
 	private Claims extractClaims(String token) {
 
 		return Jwts.parserBuilder().setSigningKey(getSignInKey()).build().parseClaimsJws(token).getBody();
+	}
+
+	public String extractEmail(String token) {
+
+		Claims claims = Jwts.parserBuilder().setSigningKey(getSignInKey()).build().parseClaimsJws(token).getBody();
+
+		return claims.getSubject();
+	}
+
+	public String generateOtpToken(String email) {
+
+		return Jwts.builder().setSubject(email).setIssuedAt(new Date())
+				.setExpiration(new Date(System.currentTimeMillis() + 5 * 60 * 1000))
+				.signWith(getSignInKey(), SignatureAlgorithm.HS256).compact();
 	}
 }

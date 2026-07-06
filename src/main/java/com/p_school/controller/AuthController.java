@@ -3,13 +3,16 @@ package com.p_school.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.p_school.entity.LoginResponse;
+import com.p_school.repository.RefreshTokenRepository;
+import com.p_school.requestdto.VerifyOtpRequest;
+import com.p_school.responsedto.OtpLoginResponse;
 import com.p_school.security.RefreshToken;
-import com.p_school.security.RefreshTokenRepository;
 import com.p_school.service.IRegister;
 
 import lombok.AllArgsConstructor;
@@ -24,13 +27,18 @@ public class AuthController {
 	private final RefreshTokenRepository refreshTokenRepository;
 
 	@PostMapping("/login")
-	public ResponseEntity<LoginResponse> login(@RequestParam String email, @RequestParam String password) {
+	public ResponseEntity<OtpLoginResponse> login(@RequestParam String email, @RequestParam String password) {
 		System.out.println("Controller Hit");
-		LoginResponse loginres = register.login(email, password);
-
-		System.err.println(loginres.getRefreshToken());
+		OtpLoginResponse loginres = register.login(email, password);
 
 		return ResponseEntity.ok(loginres);
+	}
+
+	@PostMapping("/verify-otp")
+	public ResponseEntity<LoginResponse> verifyOtp(@RequestBody VerifyOtpRequest request) {
+
+		return ResponseEntity.ok(register.verifyOtp(request));
+
 	}
 
 	@PostMapping("/refresh/{request}")

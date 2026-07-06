@@ -9,16 +9,20 @@ import org.springframework.stereotype.Service;
 
 import com.p_school.entity.LoginResponse;
 import com.p_school.entity.User;
+import com.p_school.repository.RefreshTokenRepository;
+import com.p_school.repository.UserRepository;
+import com.p_school.requestdto.VerifyOtpRequest;
+import com.p_school.responsedto.OtpLoginResponse;
 import com.p_school.security.JwtUtil;
 import com.p_school.security.RefreshToken;
-import com.p_school.security.RefreshTokenRepository;
 import com.p_school.service.IRegister;
 
 import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
-public class AuthServiceImpl implements IRegister {
+
+class AuthServiceImpl implements IRegister {
 
 	private final AuthenticationManager authenticationManager;
 
@@ -26,39 +30,66 @@ public class AuthServiceImpl implements IRegister {
 
 	private final RefreshTokenRepository refreshTokenRepository;
 
-	@Override
-	public LoginResponse login(String email, String password) {
+	private final EmailService emailService;
 
-		// 1. Authenticate User
+	private final UserRepository userRepository;
+
+	private OtpService otpService;
+
+	@Override
+	public OtpLoginResponse login(String email, String password) {
+
 		Authentication authentication = authenticationManager
 				.authenticate(new UsernamePasswordAuthenticationToken(email, password));
 
 		User user = (User) authentication.getPrincipal();
 
-		// 2. Generate Access Token
-		String accessToken = jwtUtil.generateToken(user.getEmail());
+		// Generate OTP
+		String otp = String.valueOf((int) ((Math.random() * 900000) + 100000));
 
-		// 3. Generate Refresh Token
-		String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+		// pervious is email se opt tha remove kar diya or new opt set kar diya
+		otpService.saveOtp(user.getEmail(), otp);
 
-		// 4. Agar user ka purana refresh token hai to delete kar do
+		emailService.sendOtp(user.getEmail(), otp);
+
+		String tempToken = jwtUtil.generateOtpToken(user.getEmail());
+
+		return new OtpLoginResponse(true, tempToken, "OTP Sent Successfully");
+	}
+
+	@Override
+	public LoginResponse verifyOtp(VerifyOtpRequest request) {
+
+		String email = jwtUtil.extractEmail(request.getTempToken());
+
+		otpService.verifyOtp(email, request.getOtp());
+
+		User user = userRepository.findByEmail(email).orElseThrow();
+
+		String accessToken = jwtUtil.generateToken(email);
+
+		String refreshToken = jwtUtil.generateRefreshToken(email);
+
 		refreshTokenRepository.findByUser(user).ifPresent(refreshTokenRepository::delete);
 
-		// Ya seedha bhi kar sakte ho:
-		// refreshTokenRepository.deleteByUser(user);
-
-		// 5. Save New Refresh Token
 		RefreshToken token = new RefreshToken();
+
 		token.setToken(refreshToken);
+
 		token.setUser(user);
+
 		token.setCreatedAt(LocalDateTime.now());
+
 		token.setExpiryDate(LocalDateTime.now().plusDays(7));
+
 		token.setRevoked(false);
 
 		refreshTokenRepository.save(token);
 
-		// 6. Return Response
+		otpService.deleteOtp(email);
+
 		return new LoginResponse(accessToken, refreshToken);
+
 	}
 
 	@Override
